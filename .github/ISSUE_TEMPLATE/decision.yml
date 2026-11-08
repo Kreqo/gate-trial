@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: Kreqo contributors
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+# A request for a decision: a class-3 question under the dilemma protocol
+# (glossary). The decision itself is made in a decision pull request, which
+# a session drafts from this issue and the owner approves (CI-15).
+name: Decision request
+description: Ask for a decision that needs a decision record. A session turns it into a decision pull request.
+title: "Decide: "
+labels: [decision]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Decisions are made in decision pull requests, each with a decision record that fits on one screen, at most three options and a recommendation (DOC-04). This issue asks for one. A session drafts the record and opens the pull request, which closes this issue; at most three are open at a time (DR-0001 row 7).
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What needs deciding, and why now.
+    validations:
+      required: true
+  - type: dropdown
+    id: why
+    attributes:
+      label: Why it needs a decision record
+      description: What makes it class 3 under the dilemma protocol.
+      options:
+        - It can't be undone.
+        - It's a gated change (the checks, the conventions or the license policy).
+        - It commits to a license, a public interface or a published format.
+        - A rule settles it by decision record (name the rule in the question).
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options
+      description: The options you see, at most three, and the one you'd pick.
+  - type: textarea
+    id: blocked
+    attributes:
+      label: What waits on it
+      description: The work that can't go ahead until it's decided.
+  - type: textarea
+    id: ai
+    attributes:
+      label: AI disclosure
+      description: If AI wrote or edited this request, say how (GOV-03, GOV-14).

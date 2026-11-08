@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: Kreqo contributors
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+# What only the owner may approve (CI-15), and the single source for it:
+# `cargo xtask codeowners` writes .github/CODEOWNERS from this list, which
+# `cargo xtask check codeowners` keeps in step, and `cargo xtask guard` fails
+# a pull request that changes one of these paths without a linked decision
+# record. Crate manifests aren't listed: guard checks their guarded fields
+# instead.
+#
+# The first line that isn't a comment names the owner, as `owner @login`,
+# unindented and with no team, which is how the gate's workflow step reads
+# it. Every other line is a pattern, then `  # ` and why it's protected:
+# - a path rooted with a leading `/` covers the file, link or folder at that
+#   path, and everything in the folder;
+# - a name without `/` covers every file, link or folder of that name, in
+#   any folder, and everything in it.
+# A trailing `/` is refused: the forge would then match only a folder, so a
+# file or link of that name would escape it. Globs aren't supported. Guard
+# also ignores ASCII case, as a case-insensitive checkout does.
+
+owner @darakreqo
+
+/.github  # CI definitions: workflows, CODEOWNERS, templates
+/xtask  # the checks themselves (DR-0001 row 8)
+/.cargo  # how the checks run, mutants.toml included
+/.config  # how the checks run, such as nextest's settings
+/conventions  # convention files, the review rubric included
+/deny.toml  # a convention file: the dependency policy
+/rust-toolchain.toml  # a convention file: the pinned toolchain
+/.gitattributes  # how git diffs and normalizes files, which the checks and the AI review read
+/REUSE.toml  # license policy
+/LICENSES  # license policy
+/LICENSE  # license policy: the license text
+/LICENSE-MIT  # license policy: the license text
+/LICENSE-APACHE  # license policy: the license text
+/COPYING  # license policy: the license text
+/docs/decisions  # accepted decisions are the owner's
+/.mcp.json  # the MCP servers that agent sessions in this repository load
+CLAUDE.md  # the rules for agents, which sessions load from any folder
+CLAUDE.local.md  # instructions that agent sessions load, from any folder
+.claude  # agent settings, hooks and skills, which sessions load from any folder
+rustfmt.toml  # a convention file: formatting, read from a file's folder upward
+.rustfmt.toml  # a convention file: formatting, read from a file's folder upward
+clippy.toml  # a convention file: lint configuration, read from a crate's folder upward
+.clippy.toml  # a convention file: lint configuration, read from a crate's folder upward
+/media  # human-only

@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: Kreqo contributors
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+# A bug report, with what GOV-13 asks of one. Feature ideas go to a
+# discussion instead (config.yml).
+name: Bug report
+description: Something doesn't work as it should. One problem per report.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search the open issues first. For a security problem, don't file an issue: report it privately (SEC-04).
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The version, or the commit, that you ran.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: The operating system and its version, and how you installed it.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What you did, step by step.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: What happened instead, with any error message.
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample data
+      description: The smallest data that reproduces the problem, if it needs any.
+  - type: checkboxes
+    id: one
+    attributes:
+      label: Scope
+      options:
+        - label: This report covers one problem.
+          required: true

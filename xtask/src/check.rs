@@ -14,7 +14,7 @@ use std::process::Command;
 use anyhow::{Context, Result, bail};
 use clap::ValueEnum;
 
-use crate::{crates, deny, git, rules, secrets, tools};
+use crate::{codeowners, crates, deny, git, rules, secrets, tools};
 
 /// A step of `cargo xtask check`.
 #[derive(Clone, Copy, ValueEnum)]
@@ -32,6 +32,9 @@ pub enum Step {
     /// The rules data, and its committed views, which must be what the data
     /// generates (ARCH-06, principle 12).
     Rules,
+    /// .github/CODEOWNERS, which must be what conventions/protected-paths.txt
+    /// generates (CI-15).
+    Codeowners,
     /// cargo-deny: advisories, bans, licenses and sources (SEC-02, PRIV-09, LEGAL-03, ARCH-13).
     Deny,
     /// reuse lint (LEGAL-02).
@@ -55,6 +58,7 @@ impl Step {
             Self::Docs => "docs",
             Self::Crates => "crates",
             Self::Rules => "rules",
+            Self::Codeowners => "codeowners",
             Self::Deny => "deny",
             Self::Reuse => "reuse",
             Self::Secrets => "secrets",
@@ -111,6 +115,7 @@ fn run_step(root: &Path, step: Step) -> Result<()> {
         Step::Docs => run_command(root, &mut docs()),
         Step::Crates => crates::check(root),
         Step::Rules => rules::check(root),
+        Step::Codeowners => codeowners::check(root),
         Step::Deny => {
             tools::require(root, &tools::CARGO_DENY)?;
             // Both run, so that a problem in deny.toml, such as an expired
@@ -419,6 +424,21 @@ pub fn run_command(root: &Path, command: &mut Command) -> Result<()> {
     }
 }
 
+/// Text from a pull request or an agent, as the log shows it: control
+/// characters escaped, so that it stays on its line, where a workflow
+/// command can't start (CI-09).
+pub fn printable(text: &str) -> String {
+    text.chars()
+        .map(|character| {
+            if character.is_control() {
+                character.escape_default().to_string()
+            } else {
+                character.to_string()
+            }
+        })
+        .collect()
+}
+
 /// A command as the log shows it, with the program's file name only.
 fn show(command: &Command) -> String {
     let program = Path::new(command.get_program())
@@ -519,6 +539,83 @@ mod tests {
         for step in ["clippy", "test", "rules"] {
             assert!(steps.contains(&step), "the build job doesn't run {step}");
         }
+    }
+
+    /// A job's lines in a workflow, trimmed, without its name's line.
+    fn job_lines<'a>(workflow: &'a str, job: &str) -> Vec<&'a str> {
+        let start = format!("  {job}:");
+        workflow
+            .lines()
+            .skip_while(|line| *line != start)
+            .skip(1)
+            .take_while(|line| line.is_empty() || line.starts_with("   "))
+            .map(str::trim)
+            .collect()
+    }
+
+    /// Only a run for a pull request into main, or for a merge group,
+    /// reports the required `gate` check. On any other event the guard,
+    /// the AI review and the owner's approval are skipped, so a run there,
+    /// such as one started by hand on a pull request's branch, must not
+    /// pass `gate` on its head commit, which the forge would count.
+    #[test]
+    fn ci_reports_gate_only_for_pull_requests_and_merge_groups() {
+        let workflow = include_str!("../../.github/workflows/ci.yml");
+        let gate = job_lines(workflow, "gate");
+        assert!(
+            gate.contains(&"name: ${{ (github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.base_ref == 'main')) && 'gate' || format('gate ({0})', github.event_name) }}"),
+            "{gate:?}"
+        );
+        // No other job takes the name whatever the event.
+        assert!(
+            workflow.lines().all(|line| line.trim() != "name: gate"),
+            "a job is named gate whatever the event"
+        );
+    }
+
+    /// A pull request that changes xtask runs cargo-mutants on its diff,
+    /// inside a memory cap, and the gate needs that job (QA-08, DR-0002).
+    #[test]
+    fn ci_tests_the_tests_of_xtasks_changed_lines() {
+        let workflow = include_str!("../../.github/workflows/ci.yml");
+        let mutants = job_lines(workflow, "mutants");
+        assert!(
+            mutants.contains(&"if: ${{ github.event_name == 'pull_request' }}"),
+            "{mutants:?}"
+        );
+        assert!(
+            mutants.iter().any(|line| line.starts_with(
+                "git diff --no-ext-diff --no-textconv --text \"$BASE_SHA...HEAD\" -- xtask "
+            )),
+            "{mutants:?}"
+        );
+        assert!(
+            mutants
+                .iter()
+                .any(|line| line.contains("systemd-run --scope")),
+            "{mutants:?}"
+        );
+        assert!(
+            mutants
+                .iter()
+                .any(|line| line.contains("-p MemoryMax=6G -p MemorySwapMax=0")),
+            "{mutants:?}"
+        );
+        assert!(
+            mutants.iter().any(|line| line.starts_with(
+                "cargo mutants --package xtask --in-diff \"$RUNNER_TEMP/xtask.diff\""
+            )),
+            "{mutants:?}"
+        );
+        let gate = job_lines(workflow, "gate");
+        assert!(
+            gate.contains(&"needs: [checks, build, ci, guard, reviewer, mutants]"),
+            "{gate:?}"
+        );
+        assert!(
+            gate.contains(&"need mutants \"$MUTANTS\" success"),
+            "{gate:?}"
+        );
     }
 
     /// The steps of each job in a workflow, each step as its lines.
@@ -775,6 +872,20 @@ PATH = "stubs"
         command.args(["git", ".", "--log-opts=--text HEAD"]);
         assert_eq!(show(&command), "betterleaks git . --log-opts=--text HEAD");
         assert_eq!(show(&Command::new("cargo")), "cargo");
+    }
+
+    /// Control characters are escaped, and everything else, other
+    /// scripts included, is left as it is.
+    #[test]
+    fn shows_untrusted_text_on_one_line() {
+        assert_eq!(
+            printable("a\nb\r\tc\u{1b}[31m\u{7f}d"),
+            "a\\nb\\r\\tc\\u{1b}[31m\\u{7f}d"
+        );
+        assert_eq!(
+            printable("café, 決定 `x` \"y\" 'z' \\"),
+            "café, 決定 `x` \"y\" 'z' \\"
+        );
     }
 
     /// The fmt step runs rustfmt through cargo, and fails on code that

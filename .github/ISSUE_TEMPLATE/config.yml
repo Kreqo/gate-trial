@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: Kreqo contributors
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+# Every issue uses a form: blank issues are off (GOV-13). Intents aren't
+# issues: they're stated in a session and recorded in the pull request
+# (DR-0007).
+blank_issues_enabled: false
+contact_links:
+  - name: Feature idea
+    url: https://github.com/Kreqo/kreqo/discussions
+    about: Feature ideas start as a discussion (GOV-13).
+  - name: Security report
+    url: https://github.com/Kreqo/kreqo/security/advisories/new
+    about: Report a vulnerability privately, here or to security@kreqo.org, never in a public issue (SEC-04).

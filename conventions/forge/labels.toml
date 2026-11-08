@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: Kreqo contributors
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+# The forge's labels, as code (P02 §5, invariant 8): each one's name, color
+# and one-line description, with who sets it. They're applied at setup, a
+# human-only step, and again after any change here, for example with
+#   gh label create <name> --color <color> --description <description> --force
+# for each one. Intents aren't issues, so there are no `go` or `proposed`
+# labels (DR-0007 row 2). The handbook lists them for people.
+
+# Set by the session that opens the pull request through the agent's App.
+[[label]]
+name = "agent-pr"
+color = "5319e7"
+description = "Opened by the agent's GitHub App (DR-0007 row 3)"
+
+# Set and cleared by the CI workflow's gate job, from the guard's output.
+[[label]]
+name = "needs-human"
+color = "d93f0b"
+description = "Changes a protected path or guarded field: needs the owner's approval (CI-15)"
+
+# Set and cleared by the CI workflow's gate job, from the AI review's
+# verdict: set on `needs_human`, cleared on any other readable verdict.
+[[label]]
+name = "needs-decision"
+color = "fbca04"
+description = "The AI review escalated a question to the owner (CI-18, REV-04)"
+
+# Set by the session that gives up after three failed fix attempts.
+[[label]]
+name = "blocked"
+color = "b60205"
+description = "Three fix attempts failed; the digest lists it (CI-18)"
+
+# Set by anyone, removed by the owner only. The gate fails while it's on,
+# and after anyone else removed it, until the owner adds and removes it.
+[[label]]
+name = "hold"
+color = "000000"
+description = "Pauses this pull request's auto-merge until removed (DR-0001 row 4)"
+
+# Set by the session on a decision pull request, and by the decision
+# request form on its issues.
+[[label]]
+name = "decision"
+color = "1d76db"
+description = "A decision pull request, or a request for one (CI-15)"
+
+# Set by the dependency-update bot (SEC-20).
+[[label]]
+name = "dependencies"
+color = "0366d6"
+description = "From the dependency-update bot (SEC-20)"

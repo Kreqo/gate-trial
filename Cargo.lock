@@ -387,6 +387,7 @@ dependencies = [
  "clap",
  "proc-macro2",
  "serde",
+ "serde_json",
  "toml",
 ]
 

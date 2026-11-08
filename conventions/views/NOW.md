@@ -95,7 +95,7 @@ When a case isn't covered, decide by these.
 
 ## When you write to people for yourself or the project
 
-**GOV-14** · MUST · Text that speaks for a person or for the project, such as replies to people in issues and reviews, chat, forum posts, announcements and RFCs, is written by its human author. AI may translate or proofread, with disclosure, and quoted tool output is marked as such. Unedited AI output is never posted as a person's words. User documentation drafted with AI ships only after the founder revises it, with disclosure (GOV-03); a release that ships it waits for that revision, as a gated change. Records the founder's agents keep through the agent identity (pull request and issue descriptions, comments that report on their own work, plans, ADRs, release summaries and digests) are disclosed as AI-written.\
+**GOV-14** · MUST · Text that speaks for a person or for the project, such as replies to people in issues and reviews, chat, forum posts, announcements and RFCs, is written by its human author. AI may translate or proofread, with disclosure, and quoted tool output is marked as such. Unedited AI output is never posted as a person's words. User documentation drafted with AI ships only after the founder revises it, with disclosure (GOV-03); a release that ships it waits for that revision, as a gated change. Records the founder's agents keep through the agent identity (pull request descriptions and the intents they record, issue descriptions, comments that report on their own work, ADRs and release summaries) are disclosed as AI-written. An intent is the exception within these records: the contributor reads and approves it before work starts, and the pull request's description says so.\
 *Why:* People want to talk to people; records the founder's agents keep aren't conversation. · *Checked in review.*
 
 
@@ -116,7 +116,7 @@ When a case isn't covered, decide by these.
 
 ## When a release needs your notes, docs or other steps
 
-**GOV-14** · MUST · Text that speaks for a person or for the project, such as replies to people in issues and reviews, chat, forum posts, announcements and RFCs, is written by its human author. AI may translate or proofread, with disclosure, and quoted tool output is marked as such. Unedited AI output is never posted as a person's words. User documentation drafted with AI ships only after the founder revises it, with disclosure (GOV-03); a release that ships it waits for that revision, as a gated change. Records the founder's agents keep through the agent identity (pull request and issue descriptions, comments that report on their own work, plans, ADRs, release summaries and digests) are disclosed as AI-written.\
+**GOV-14** · MUST · Text that speaks for a person or for the project, such as replies to people in issues and reviews, chat, forum posts, announcements and RFCs, is written by its human author. AI may translate or proofread, with disclosure, and quoted tool output is marked as such. Unedited AI output is never posted as a person's words. User documentation drafted with AI ships only after the founder revises it, with disclosure (GOV-03); a release that ships it waits for that revision, as a gated change. Records the founder's agents keep through the agent identity (pull request descriptions and the intents they record, issue descriptions, comments that report on their own work, ADRs and release summaries) are disclosed as AI-written. An intent is the exception within these records: the contributor reads and approves it before work starts, and the pull request's description says so.\
 *Why:* People want to talk to people; records the founder's agents keep aren't conversation. · *Checked in review.*
 
 
@@ -140,14 +140,15 @@ These MAY rules are yours to take or leave.
 ## Terms used here
 
 - **ADR:** a decision record, numbered `DR-NNNN`, in `docs/decisions/` (DOC-04).
-- **Agent identity:** the labeled forge identity through which the founder's agents push branches, open pull requests and issues, and comment (GOV-16, CI-09, CI-10).
+- **Agent identity:** the labeled forge identity through which the founder's agents push branches, open pull requests and issues, and comment (GOV-16, CI-10).
 - **The AI review:** the independent review every change gets before it merges, by a reviewer agent with a fresh context and no write access, against the written review rubric; its verdict is a required check (CI-03).
 - **Asset register:** the list of the organization's assets, such as domains, trademarks, signing keys, registry names, store and developer accounts, the forge organization and hosted services, with each one's holders or recovery path (LIFE-02).
-- **Dilemma protocol:** how the founder's agents settle open questions. Class 1 (reversible, technical): the agent decides and logs it. Class 2 (reversible, product-shaping): the agent uses its default, listed in the digest, where the founder can override it. Class 3 (irreversible, gated, a license, public-interface or published-format commitment, or a question a rule settles by ADR, such as a privacy review under PRIV-08): a decision pull request.
+- **Dilemma protocol:** how the founder's agents settle open questions. Class 1 (reversible, technical): the agent decides and logs it in the pull request. Class 2 (reversible, product-shaping): the agent uses its default, listed in the digest, where the founder can override it with a new intent. Class 3 (irreversible, gated, a license, public-interface or published-format commitment, or a question a rule settles by ADR, such as a privacy review under PRIV-08): a decision pull request.
 - **The forge:** the service hosting the repositories, their pull requests and CI. GitHub today; the rules don't depend on it.
 - **Gated change:** a change to CI check definitions, convention files or license policy, or a crates.io publish. It lands or ships only once the founder approves its ADR or release summary (CI-15, REL-17). Since DR-0006 it also covers a release that ships AI-drafted user documentation, which waits for the founder's revision (GOV-14).
 - **Hosted service:** any server the organization runs that holds other people's personal information.
 - **Human-only step:** a step only a human can take, such as answering a security report or submitting to Flathub. The digest lists it. It blocks nothing unless a rule says it does.
+- **Intent:** what to build and why, as a contributor states it in a local session; the agent writes it, with its acceptance criteria, and the contributor reads and approves that text before work starts; the approved intent goes into the pull request's description, disclosed as AI-written, as the record of the human's creative input (CI-12, GOV-03, GOV-14).
 - **Maintainer:** a person named in GOVERNANCE.md with merge rights on a project.
 - **The organization:** Kreqo, today a project run by its founder, later the non-profit (BIZ-10).
 - **The suite:** every app and shared crate the organization publishes.

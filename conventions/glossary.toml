@@ -9,7 +9,7 @@ definition = "a decision record, numbered `DR-NNNN`, in `docs/decisions/` (DOC-0
 
 [[term]]
 term = "Agent identity"
-definition = "the labeled forge identity through which the founder's agents push branches, open pull requests and issues, and comment (GOV-16, CI-09, CI-10)."
+definition = "the labeled forge identity through which the founder's agents push branches, open pull requests and issues, and comment (GOV-16, CI-10)."
 
 [[term]]
 term = "The AI review"
@@ -41,11 +41,11 @@ definition = "a departure from a SHOULD: one that is a class-3 decision has a de
 
 [[term]]
 term = "The digest"
-definition = "the report the founder's agents write for the founder each day, exception-first, with a Monday rollup that lists class-2 decisions (DR-0001 row 7). It lists human-only steps and pull requests marked blocked (CI-18)."
+definition = "the report CI generates for the founder each day, exception-first, with a Monday rollup that lists class-2 decisions (DR-0001 row 7, DR-0007 row 6). It lists human-only steps and pull requests marked blocked (CI-18)."
 
 [[term]]
 term = "Dilemma protocol"
-definition = "how the founder's agents settle open questions. Class 1 (reversible, technical): the agent decides and logs it. Class 2 (reversible, product-shaping): the agent uses its default, listed in the digest, where the founder can override it. Class 3 (irreversible, gated, a license, public-interface or published-format commitment, or a question a rule settles by ADR, such as a privacy review under PRIV-08): a decision pull request."
+definition = "how the founder's agents settle open questions. Class 1 (reversible, technical): the agent decides and logs it in the pull request. Class 2 (reversible, product-shaping): the agent uses its default, listed in the digest, where the founder can override it with a new intent. Class 3 (irreversible, gated, a license, public-interface or published-format commitment, or a question a rule settles by ADR, such as a privacy review under PRIV-08): a decision pull request."
 
 [[term]]
 term = "The forge"
@@ -65,7 +65,7 @@ definition = "a step only a human can take, such as answering a security report 
 
 [[term]]
 term = "Intent"
-definition = "an issue in which the founder states what to build and why; the founder's `go` label starts an agent on it, and the agent posts its plan for the work there."
+definition = "what to build and why, as a contributor states it in a local session; the agent writes it, with its acceptance criteria, and the contributor reads and approves that text before work starts; the approved intent goes into the pull request's description, disclosed as AI-written, as the record of the human's creative input (CI-12, GOV-03, GOV-14)."
 
 [[term]]
 term = "Maintainer"

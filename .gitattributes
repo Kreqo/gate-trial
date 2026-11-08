@@ -7,3 +7,7 @@
 # data generates (ARCH-06, QA-09).
 conventions/views/*.md text eol=lf
 xtask/testdata/rules/views/**/*.md text eol=lf
+
+# The generated CODEOWNERS keeps LF endings in every checkout, so its check
+# compares like with like.
+.github/CODEOWNERS text eol=lf

@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: Kreqo contributors
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+# Runs the CI workflow's `gate` job again when something it reads from the
+# forge changes after it ran: a review, such as the owner's approval of a
+# protected change's head commit (CI-15), or the `hold` label (DR-0001 row
+# 4). The CI workflow can't listen for these
+# itself: a run of it on another event would report a `gate` check of its
+# own, and a skipped one counts as passed. Re-running one job keeps the
+# other jobs' results and outputs, re-reads only the reviews and labels,
+# and runs no code from the pull request. Hardened as CI-07, CI-08 and
+# CI-09 ask; zizmor checks this file.
+name: Gate re-run
+
+on:
+  pull_request_review:
+    types: [submitted, dismissed]
+  pull_request:
+    types: [labeled, unlabeled]
+
+permissions: {}
+
+jobs:
+  rerun:
+    name: rerun
+    # Any review re-runs it: the forge may report the owner's association
+    # as CONTRIBUTOR or NONE, for one whose organization membership is
+    # private, and then the approval would never reach the gate. A re-run
+    # only reads, and the concurrency group below keeps one waiting per
+    # pull request, so a stranger's reviews cost little. Any other label
+    # re-runs nothing.
+    if: >-
+      ${{ github.event_name == 'pull_request_review'
+      || (github.event_name == 'pull_request' && github.event.label.name == 'hold') }}
+    # On the job, not the workflow, so that a skipped run never cancels a
+    # waiting one. The newest run does what an older one would have.
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      actions: write # Re-runs the gate job.
+    steps:
+      - name: Re-run the gate of the pull request's latest CI run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          run=$(gh run list --workflow ci.yml --event pull_request --commit "$HEAD_SHA" --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          if [ -z "$run" ]; then
+            echo "No CI run for $HEAD_SHA yet. Its gate reads the change when it runs."
+            exit 0
+          fi
+          # Its gate may already have run: wait for the run to end, since
+          # only an ended run's jobs can run again.
+          until [ "$(gh run view "$run" --json status --jq .status)" = completed ]; do
+            sleep 30
+          done
+          job=$(gh run view "$run" --json jobs --jq '.jobs[] | select(.name == "gate") | .databaseId')
+          if [ -z "$job" ]; then
+            echo "::error::CI run $run has no gate job."
+            exit 1
+          fi
+          gh run rerun "$run" --job "$job"
+          echo "Started the gate of CI run $run again."

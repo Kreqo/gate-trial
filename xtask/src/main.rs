@@ -5,14 +5,17 @@
 
 mod attributes;
 mod check;
+mod codeowners;
 mod crates;
 mod deny;
 mod git;
+mod guard;
 mod hooks;
 mod rules;
 mod scratch;
 mod secrets;
 mod tools;
+mod verdict;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -35,6 +38,20 @@ enum Command {
         #[arg(value_enum)]
         steps: Vec<check::Step>,
     },
+    /// Writes .github/CODEOWNERS from conventions/protected-paths.txt (CI-15).
+    Codeowners,
+    /// Classifies a pull request's change as protected or not, and fails a
+    /// protected one whose body links no decision record (CI-15). With
+    /// GITHUB_OUTPUT set, appends `protected` and `decision` to that file.
+    Guard {
+        /// The pull request's base commit; the change is read from its merge
+        /// base with HEAD.
+        #[arg(long)]
+        base: String,
+        /// The file that holds the pull request's body.
+        #[arg(long)]
+        body_file: Option<PathBuf>,
+    },
     /// Installs the git hooks (SEC-03).
     Hooks,
     /// Scans the staged changes for secrets; the pre-commit hook runs it (SEC-03).
@@ -56,6 +73,12 @@ enum Command {
     ScanPullRequest,
     /// Prints the pinned tool versions as GitHub Actions outputs (CI-07).
     Tools,
+    /// Checks the AI review's review.json, and fails unless it approves with
+    /// nothing blocking or unchecked (CI-03, CI-18).
+    Verdict {
+        /// The file that holds the verdict.
+        file: PathBuf,
+    },
 }
 
 fn main() -> ExitCode {
@@ -75,6 +98,8 @@ fn run() -> Result<bool> {
     let root = workspace_root()?;
     match cli.command {
         Command::Check { steps } => check::run(&root, &steps),
+        Command::Codeowners => codeowners::write(&root).map(|()| true),
+        Command::Guard { base, body_file } => guard::run(&root, &base, body_file.as_deref()),
         Command::Hooks => hooks::install(&root).map(|()| true),
         Command::PreCommit => hooks::pre_commit(&root).map(|()| true),
         Command::CommitMsg { file } => hooks::commit_msg(&root, &file).map(|()| true),
@@ -85,6 +110,7 @@ fn run() -> Result<bool> {
             tools::print_github_outputs();
             Ok(true)
         }
+        Command::Verdict { file } => verdict::run(&file),
     }
 }
 

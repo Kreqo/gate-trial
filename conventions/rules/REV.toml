@@ -7,7 +7,7 @@
 [[rule]]
 id = "REV-01"
 level = "MUST"
-statement = "A reviewer approves a change once it does what its intent and plan, or an outside contributor's linked issue, say, clearly improves the codebase and meets every applicable MUST in this document. Perfection is not a merge criterion; further polish is reported as an advisory finding for a follow-up issue."
+statement = "A reviewer approves a change once it does what the intent and acceptance criteria in its description, or an outside contributor's linked issue, say, clearly improves the codebase and meets every applicable MUST in this document. Perfection is not a merge criterion; further polish is reported as an advisory finding for a follow-up issue."
 rationale = "\"Better\" ships while \"perfect\" waits."
 verification = "Review checklist: approval states what improved; follow-ups reported as advisory findings"
 check = "Review"
@@ -19,7 +19,7 @@ status = "active"
 [[rule]]
 id = "REV-02"
 level = "SHOULD"
-statement = "Reviews follow an order: is the PR valid and true to its intent or linked issue, does the approach fit, does it work, then the code itself. Every review ends with a summary of what was checked and what couldn't be. Each finding is marked blocking or advisory, and only blocking findings block a merge. Reviewers never block on personal preference or on style these conventions don't set, and never widen a PR's scope. Details: the review rubric (CI-03)."
+statement = "Reviews follow an order: is the PR valid and true to the intent in its description or its linked issue, does the approach fit, does it work, then the code itself. Every review ends with a summary of what was checked and what couldn't be. Each finding is marked blocking or advisory, and only blocking findings block a merge. Reviewers never block on personal preference or on style these conventions don't set, and never widen a PR's scope. Details: the review rubric (CI-03)."
 rationale = "A fixed order finds the wrong problem before the wrong line, and marking each finding says what blocks."
 verification = "Review checklist: summary present; each finding marked blocking or advisory"
 check = "Review"
