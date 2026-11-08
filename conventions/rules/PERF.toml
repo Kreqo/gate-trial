@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: Kreqo contributors
+# SPDX-License-Identifier: CC-BY-4.0
+
+# Performance (PERF): the rules of this area. Source of truth;
+# `cargo xtask rules generate` writes the views from these files.
+
+[[rule]]
+id = "PERF-01"
+level = "MUST"
+statement = "Each app documents budgets for cold start, idle CPU, memory and binary size in its `project.toml`."
+rationale = "Without a number, \"efficient\" is an adjective (Principle 8)."
+verification = "Review checklist: budgets present in each app's `project.toml`"
+check = "Review"
+trigger = "always"
+who = "you"
+moments = ["new-app"]
+open = { question = "Default budgets per app category", leaning = "" }
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "PERF-02"
+level = "MUST"
+statement = "An idle app uses no CPU: rendering and work are event-driven."
+rationale = "Polling drains batteries and heats laptops while nothing happens."
+verification = "CI: idle CPU sample at zero"
+check = "CI"
+trigger = "always"
+who = "tool"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "PERF-03"
+level = "MUST"
+statement = "Data already on the device shows without waiting for the network: no spinners for local data."
+rationale = "Local data (Principle 2) is instantly readable; a spinner signals a network dependency."
+verification = "Review checklist: local reads never await the network"
+check = "Review"
+trigger = "always"
+who = "ai"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "PERF-04"
+level = "MUST"
+statement = "Benchmarks run in CI against the budgets (PERF-01). Deterministic measurements, such as instruction counts, run on every pull request, and a regression past the budget, or past 5% by default, fails it. Noisier measurements run nightly and open an issue on such a regression. Where 5% is noisier than a metric's measurement, its threshold is set by ADR."
+rationale = "A measured gate catches regressions a review cannot see, and running noisy measurements nightly keeps them from failing pull requests at random."
+verification = "CI: benchmark comparison against budget on each pull request; nightly comparison for noisier metrics"
+check = "CI"
+trigger = "first-release"
+who = "tool"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "PERF-05"
+level = "SHOULD"
+statement = "Apps stay responsive with the amount of user content their README names, verified by a scale test."
+rationale = "Collections grow for years, and a scale test finds linear-time paths early."
+verification = "CI: scale test at the amount the README names"
+check = "CI"
+trigger = "first-release"
+who = "tool"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "PERF-06"
+level = "MUST"
+statement = "Each app publishes minimum hardware requirements (CPU, RAM, storage) and is tested each release on a reference machine at least five years old. CI runs that test where it can; where it can't, the test is a human-only step that doesn't block the release."
+rationale = "Blue Angel DE-UZ 215 ties efficiency to old hardware, which users keep for years."
+verification = "Release checklist: requirements page; CI's reference-machine test log, where CI runs the test"
+check = "Release"
+trigger = "first-release"
+who = "tool"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "PERF-07"
+level = "SHOULD"
+statement = "Idle and standard-scenario energy use is measured each release on a documented setup (at least 10 runs, relative standard deviation at most 5%) and published next to earlier results. An increase over 10% needs a published reason. Apps never require disabling OS power management."
+rationale = "Blue Angel DE-UZ 215 requires reproducible, published energy measurements."
+verification = "Release checklist: energy measurement published with earlier results"
+check = "Release"
+trigger = "one-point-oh"
+who = "ai"
+added = "0.1.0"
+status = "active"

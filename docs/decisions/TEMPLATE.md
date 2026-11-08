@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # DR-NNNN: <title>
 
-Status: proposed | accepted | superseded by DR-…   Date: YYYY-MM-DD   Scope: org | <repo>
+Status: proposed | accepted | accepted; row N superseded by DR-… | superseded by DR-…   Date: YYYY-MM-DD   Scope: org | <repo>
 
 ## What you are approving (2 lines)
 

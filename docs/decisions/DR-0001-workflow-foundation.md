@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # DR-0001: Workflow foundation
 
-Status: accepted   Date: 2026-11-06   Scope: org
+Status: accepted; row 5 superseded by DR-0006   Date: 2026-11-06   Scope: org
 
 ## What you are approving
 

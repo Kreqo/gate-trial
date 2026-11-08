@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: Kreqo contributors
+# SPDX-License-Identifier: CC-BY-4.0
+
+# Code review (REV): the rules of this area. Source of truth;
+# `cargo xtask rules generate` writes the views from these files.
+
+[[rule]]
+id = "REV-01"
+level = "MUST"
+statement = "A reviewer approves a change once it does what its intent and plan, or an outside contributor's linked issue, say, clearly improves the codebase and meets every applicable MUST in this document. Perfection is not a merge criterion; further polish is reported as an advisory finding for a follow-up issue."
+rationale = "\"Better\" ships while \"perfect\" waits."
+verification = "Review checklist: approval states what improved; follow-ups reported as advisory findings"
+check = "Review"
+trigger = "always"
+who = "ai"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "REV-02"
+level = "SHOULD"
+statement = "Reviews follow an order: is the PR valid and true to its intent or linked issue, does the approach fit, does it work, then the code itself. Every review ends with a summary of what was checked and what couldn't be. Each finding is marked blocking or advisory, and only blocking findings block a merge. Reviewers never block on personal preference or on style these conventions don't set, and never widen a PR's scope. Details: the review rubric (CI-03)."
+rationale = "A fixed order finds the wrong problem before the wrong line, and marking each finding says what blocks."
+verification = "Review checklist: summary present; each finding marked blocking or advisory"
+check = "Review"
+trigger = "always"
+who = "ai"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "REV-03"
+level = "SHOULD"
+statement = "Maintainers give a first response to a PR from an outside contributor within 3 business days: approve, request changes or hand over. Authors may ping after a week. A reviewer who can't follow up says so. Target review times by change type are published, and actual times are reported each release."
+rationale = "Silence is what drives contributors away; a stated time is a promise they can hold."
+verification = "Periodic audit: review-time report per release"
+check = "Periodic"
+trigger = "open-to-contributions"
+who = "you"
+moments = ["contributors"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "REV-04"
+level = "MUST"
+statement = "Review disagreements, design disputes included, are settled by data first, then by this document, then by the founder in a decision pull request. The decision and its reason are recorded on the PR."
+rationale = "A known escalation path ends arguments; an unknown one ends contributions."
+verification = "Review checklist: decision recorded on the PR, with its decision pull request linked"
+check = "Review"
+trigger = "always"
+who = "ai"
+added = "0.1.0"
+status = "active"
+
+[[rule.later]]
+trigger = "open-to-contributions"
+statement = "Review disagreements are settled by data first, then by this document, then by the area owner, then by the decision-maker named in GOVERNANCE.md. A design dispute becomes an RFC, and the decision and its reason are recorded on the PR."
+verification = "Review checklist: decision recorded on the PR"

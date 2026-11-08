@@ -1,0 +1,344 @@
+# SPDX-FileCopyrightText: Kreqo contributors
+# SPDX-License-Identifier: CC-BY-4.0
+
+# Governance and contribution (GOV): the rules of this area. Source of truth;
+# `cargo xtask rules generate` writes the views from these files.
+
+[[rule]]
+id = "GOV-01"
+level = "MUST"
+statement = "Significant changes go through a public RFC, written from the RFC template and proposed in a decision pull request in the repository that holds these conventions; the RFC number is its pull-request number. Lifecycle: draft; a final comment period of at least 10 days, opened with a proposed disposition; then accepted, rejected or postponed. The author may withdraw at any time, and accepted RFCs become implemented or superseded. An unresolved blocking concern stops the comment period. The decision and its rationale are posted on the RFC and recorded in the pull request's ADR; the RFC is never substantially edited afterwards, and a later RFC supersedes it and both link each other. Other decisions follow GOV-09. The RFC template requires a stated user problem with a real use case, alternatives including doing nothing and a plugin, how users learn it, an impact section (security, privacy, accessibility, internationalization, data and migration, performance, platforms), and implementation evidence before the comment period. Details: CONTRIBUTING.md."
+rationale = "A timed public comment period and a written rationale protect the project while one person decides."
+verification = "Review checklist: RFC in a decision pull request for significant changes; RFC template present"
+check = "Review"
+trigger = "open-to-contributions"
+who = "you"
+moments = ["contributors"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-02"
+level = "MUST"
+statement = "The author of a change owns its intent, specification, tests and consequences, and can explain what it does and why, whether or not AI wrote the code; for an agent's change, the author is the person who directed it. Every change gets the independent AI review (CI-03), line by line on risk-tier paths, on top of the automated gates every change passes (CI-02). Each project lists its risk-tier paths in its `project.toml`, which the review tooling reads."
+rationale = "Reading every line of AI-written code doesn't scale; owning intent and gating risk does."
+verification = "Review checklist: linked intent or issue; risk-tier paths read from `project.toml` and reviewed line by line"
+check = "Review"
+trigger = "always"
+who = "ai"
+added = "0.1.0"
+status = "active"
+
+[[rule.reminder]]
+trigger = "second-maintainer"
+note = "Before a second maintainer joins, an ADR sets their part in review and approval, risk-tier paths included; per-change human review was not adopted with the workflow (DR-0001 rows 4 and 5)."
+
+[[rule]]
+id = "GOV-03"
+level = "MUST"
+statement = "AI assistance is disclosed. Every commit in which AI produced anything beyond single-line completion carries the `Co-Authored-By:` trailer naming the model, as emitted by the tooling, and the squash commit keeps every such trailer from the branch. The pull request says how AI was used, what it produced, the human creative input (the intent, design, selection, editing), and what verified it, such as the checks, the independent AI review (CI-03) and any human check. Disclosure covers code, docs, RFCs, ADRs, issues and review comments."
+rationale = "Disclosure tells reviewers where to look and records human authorship for the copyright record."
+verification = "CI: squash commit carries the branch's trailers; Review checklist: disclosure block present"
+check = "Review"
+trigger = "always"
+who = "ai"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-04"
+level = "MUST"
+statement = "Before contributing upstream, contributors check the upstream's AI policy in the conventions' dated table of upstream AI policies, re-verified at the time, and follow it. A named human opens every upstream issue and pull request, writes its text and answers its review; an agent never acts in another project on its own. Where AI assistance is banned, the contribution is written by hand. Disclosure uses the upstream's own format, never Kreqo's trailer where the upstream forbids it."
+rationale = "Upstream policies differ and change, a Kreqo trailer is forbidden in several, and upstream maintainers talk to accountable people."
+verification = "Review checklist: upstream policy checked and dated; a human opened and wrote each upstream issue and pull request"
+check = "Review"
+trigger = "always"
+who = "you"
+moments = ["upstream"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-05"
+level = "MUST"
+statement = "A named human opens every pull request and issue in Kreqo's repositories, writes its description (GOV-14) and answers its review, except for pull requests and issues from the agent identity (GOV-16) or the dependency-update bot (SEC-20). An agent may push commits to a branch for its human operator. Undisclosed agent activity leads to a ban under the code of conduct."
+rationale = "Contributors and maintainers talk to accountable people, not to agents; the founder answers for the project's own agents, whose identity says what they are."
+verification = "Review checklist: human author on PR, or the agent identity for the founder's agents, or the dependency-update bot (SEC-20); conduct process"
+check = "Review"
+trigger = "open-to-contributions"
+who = "you"
+moments = ["contributors"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-06"
+level = "MUST"
+statement = "The code of conduct is [Contributor Covenant 3.0](https://www.contributor-covenant.org/version/3/0/code_of_conduct/), with a private reporting address; GOV-21 completes its reporting section before the project opens to outside contributions. Its scope covers the forge, chat, forum and events; app names, descriptions, screenshots and bundled content; and content an AI agent posts under a person's name."
+rationale = "A code of conduct without named scope and enforcement is decoration."
+verification = "CI: CODE_OF_CONDUCT.md from the template; Review checklist"
+check = "Review"
+trigger = "always"
+who = "ai"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-07"
+level = "MUST"
+statement = "GOVERNANCE.md states the decision model (GOV-09); who holds each decision right (starting work on intents, accepting decision pull requests and gated changes, overriding class-2 decisions, releases, merges per area); who holds each sensitive access (forge admin, the agent identity and its keys, CI secrets including AI model keys, signing keys, registry ownership, DNS); how people join and leave each role; and the escalation path (REV-04). Names live only in GOVERNANCE.md, in ADRs and in files that tooling reads, such as CODEOWNERS; other documents link to GOVERNANCE.md."
+rationale = "Hand-copied names drift; one file keeps roles and access current."
+verification = "CI: GOVERNANCE.md present with required sections"
+check = "CI"
+trigger = "always"
+who = "tool"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-08"
+level = "MUST"
+statement = "Contributions are accepted under the unmodified Developer Certificate of Origin 1.1, without a CLA. The human author signs off once, in the pull request, and the sign-off lands in the squash commit; an agent never adds a sign-off. Pull requests from the agent identity or the dependency-update bot (SEC-20) carry no sign-off. Sign-offs use a known identity: a name the contributor is publicly known by, used consistently, with a working email. Anonymous contributions are not accepted. People with release, signing, publishing or escrow access (LIFE-02) are personally known to the founder or another maintainer."
+rationale = "The DCO needs a reachable, consistent identity; a legal name can't be verified without collecting ID. The founder needs no certificate to contribute to the founder's own project, and an agent can't give one."
+verification = "CI: sign-off check on the squash commit of every pull request outside the agent identity and that bot"
+check = "CI"
+trigger = "open-to-contributions"
+who = "tool"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-09"
+level = "MUST"
+statement = "While the project is founder-led, the founder decides RFCs, decision pull requests and disputes, after the public comment period where one applies, and records the rationale. Area owners decide within their areas. The founder's agents settle open questions by the dilemma protocol. Other proposals use lazy consensus: a proposal stands if no maintainer objects, with reasons, within 72 hours, and one that changes a public interface needs a decision pull request. Votes, +1s and popularity never decide features."
+rationale = "A named decider with written reasons beats implied consensus or counting votes."
+verification = "Review checklist: decision and rationale recorded"
+check = "Review"
+trigger = "open-to-contributions"
+who = "you"
+moments = ["contributors"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-10"
+level = "MUST"
+statement = "GOVERNANCE.md names the trigger for collective governance, such as three active maintainers or the 1.0 release, whichever comes first. At the trigger, an RFC creates a maintainer council that decides by consent: no outstanding objection after 10 days."
+rationale = "Writing the hand-over trigger down now prevents a founder from holding power by default."
+verification = "Review checklist: trigger named in GOVERNANCE.md; Periodic audit of the trigger"
+check = "Review"
+trigger = "open-to-contributions"
+who = "you"
+moments = ["contributors"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-11"
+level = "MUST"
+statement = "People who decide for the commons disclose any paid or ownership relationship with Kreqo's company, a sponsor, an employer or a competitor, and recuse themselves where it applies; a conflict can't be waived. Payment never buys merge rights, roadmap priority or changes to this document. Once a decision body has five or more members, at most 40% share an affiliation, the company included."
+rationale = "Open-core projects lose trust when the company's interests decide for the commons."
+verification = "Review checklist: disclosures in GOVERNANCE.md; affiliation count"
+check = "Review"
+trigger = "funds"
+who = "you"
+moments = ["money"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-12"
+level = "MUST"
+statement = "README and CONTRIBUTING name the public, archived channels: the issue tracker plus one forum or chat. Proposals and decisions live there, and anything decided in chat or a meeting is written up there. Private channels exist only for security and conduct reports."
+rationale = "Decisions nobody can find later aren't decisions."
+verification = "CI: channels section in README; Review checklist"
+check = "Review"
+trigger = "open-to-contributions"
+who = "you"
+moments = ["contributors"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-13"
+level = "MUST"
+statement = "Issue templates per type, with blank issues disabled. Bug reports give version, platform, steps, expected and actual results, and the smallest sample data that reproduces the problem, one problem per report; feature ideas go to discussion, or to an RFC (GOV-01) once outside contributions are open. Triage uses documented statuses, severities and labels (area, kind, difficulty, impact, AI-assisted; `unsafe` changes follow SEC-01), ranks data loss and crashes highest, and keeps a list of reports that aren't bugs, each with a canned answer. Reports waiting on the reporter close after 14 days of silence. New issues get a first response within a documented time. Details: CONTRIBUTING.md."
+rationale = "Structured reports and canned answers are what let one maintainer triage at all."
+verification = "CI: issue templates present; Periodic audit of triage statuses"
+check = "Review"
+trigger = "first-release"
+who = "ai"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-14"
+level = "MUST"
+statement = "Text that speaks for a person or for the project, such as replies to people in issues and reviews, chat, forum posts, announcements and RFCs, is written by its human author. AI may translate or proofread, with disclosure, and quoted tool output is marked as such. Unedited AI output is never posted as a person's words. User documentation drafted with AI ships only after the founder revises it, with disclosure (GOV-03); a release that ships it waits for that revision, as a gated change. Records the founder's agents keep through the agent identity (pull request and issue descriptions, comments that report on their own work, plans, ADRs, release summaries and digests) are disclosed as AI-written."
+rationale = "People want to talk to people; records the founder's agents keep aren't conversation."
+verification = "Review checklist: human-written replies, posts and announcements; disclosure on agent-written records and AI-drafted documentation; the founder's revision before a release ships AI-drafted documentation"
+check = "Review"
+trigger = "always"
+who = "you"
+moments = ["speaking", "release"]
+added = "0.1.0"
+status = "active"
+
+[[rule.later]]
+trigger = "open-to-contributions"
+statement = "Text written for people (issues, PR titles and descriptions, reviews, RFCs, chat) is written by its human author. AI may translate or proofread, with disclosure, and quoted tool output is marked as such. Unedited AI output is never posted to a person. User documentation drafted with AI ships only after the founder revises it, with disclosure (GOV-03); a release that ships it waits for that revision, as a gated change. Records the founder's agents keep through the agent identity (pull request and issue descriptions, comments that report on their own work, plans, ADRs, release summaries and digests) are the exception: they are disclosed as AI-written, and replies to people stay human-written. Branch commit messages are outside this rule, because the squash commit that lands carries the PR title and description."
+rationale = "People want to talk to people; every peer studied restricts AI-written text to humans. Records the founder's agents keep aren't conversation."
+verification = "Review checklist: human-written titles, descriptions and replies outside the agent identity; disclosure on agent-written records and AI-drafted documentation; the founder's revision before a release ships AI-drafted documentation"
+check = "Review"
+
+[[rule]]
+id = "GOV-15"
+level = "MUST"
+statement = "Maintainers may close, without detailed review, contributions that look like unreviewed AI output or are low-effort or unactionable, linking this rule; repeat cases lead to limits under the code of conduct. Nobody is required to use AI or to review AI-assisted work. Good-first issues are reserved for human newcomers. Suspicion alone is never treated as evidence, and harassing anyone over their use of AI is a conduct violation."
+rationale = "Review time is the scarcest resource, and writing style isn't evidence of AI use."
+verification = "Review checklist; conduct process"
+check = "Review"
+trigger = "open-to-contributions"
+who = "you"
+moments = ["contributors"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-16"
+level = "MUST"
+statement = "Only humans appear in the git author field, and only humans or the forge's merge identity in the committer field. AI tools appear in commits only in the `Co-Authored-By` disclosure trailer (GOV-03), and on the forge only through the agent identity, which the founder answers for, or as the independent AI review (CI-03). CI rejects commits that break this."
+rationale = "Authorship is accountability; an AI can't sign the DCO or answer for a change."
+verification = "CI: author and committer fields checked against the contributor list and the forge identity"
+check = "CI"
+trigger = "always"
+who = "tool"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-17"
+level = "MUST"
+statement = "AI-created code meets a higher test bar: every edge case the author or reviewer can name is tested, and no untested path merges. Generated code that isn't an extension or refactor of existing project code gets a provenance check (LEGAL-11) before merging."
+rationale = "Tests written by the model that wrote the code share its blind spots; named cases don't."
+verification = "Review checklist: edge cases listed and tested; coverage and missed-mutant results on the PR where the checks report them"
+check = "Review"
+trigger = "always"
+who = "ai"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-18"
+level = "SHOULD"
+statement = "Features and large changes start as an issue that states the user problem and a real use case, and an area owner accepts it before a PR is opened. Contributors with three or fewer merged PRs get a maintainer's go-ahead before feature or large refactoring PRs; fixes, docs and translations are always welcome. Details: CONTRIBUTING.md."
+rationale = "Agreeing on the problem first avoids reviewing work nobody wanted."
+verification = "Review checklist: accepted issue linked"
+check = "Review"
+trigger = "open-to-contributions"
+who = "you"
+moments = ["contributors"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-19"
+level = "SHOULD"
+statement = "Maintainers are invited after sustained review, triage or area work. Areas and working groups (design, docs, translation, accessibility) name their leads, and non-code contributors can hold roles. A triage role can label and close but not merge. Elevated access is granted only after a documented review, listed publicly, and removed after 12 months of inactivity; inactive maintainers become emeritus and can return."
+rationale = "Roles with written entry and exit keep access current and recognize non-code work."
+verification = "Periodic audit of access against GOVERNANCE.md"
+check = "Periodic"
+trigger = "open-to-contributions"
+who = "you"
+moments = ["contributors"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-20"
+level = "MAY"
+statement = "The project may keep a public goals board listing approved, postponed and declined initiatives, each with completion criteria and a named owner. Once the community is large enough, contributors may rank suite-wide goals every two years."
+rationale = "A public board shows what was declined, not only what was done."
+verification = "Review checklist"
+check = "Review"
+trigger = "always"
+who = "you"
+moments = ["feature"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-21"
+level = "MUST"
+statement = "CODE_OF_CONDUCT.md names a private reporting address and at least two people who handle reports, one of them outside the founder (an external contact while the project has one maintainer). Reports are acknowledged within 24 hours where possible and within 3 days at most, and decided within 7 days or given a new timeline. Anyone involved or conflicted steps aside. Responses follow the Contributor Covenant 3.0 ladder, with a named appeal route, protection from retaliation and confidential records. An anonymized summary is published yearly from 1.0."
+rationale = "The hard case is a report about the founder, which needs a second contact to be credible."
+verification = "CI: reporting section present; Periodic audit of response times; yearly summary"
+check = "Review"
+trigger = "open-to-contributions"
+who = "you"
+moments = ["contributors"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-22"
+level = "MUST"
+statement = "The organization never ships model-generated logos, brand assets, illustrations, animation, music, sound design, voices or demo content. This rule covers what the organization ships, not what users generate in the apps (AIF)."
+rationale = "Art is valued as human expression, and the models were trained on artists' work without their consent."
+verification = "Review checklist: media provenance declared in REUSE metadata"
+check = "Review"
+trigger = "always"
+who = "you"
+moments = ["media"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-23"
+level = "MAY"
+statement = "Once the organization exists, contributor-members, non-code contributors included, may elect a leadership body of 3–7 people; votes on a public list close after 7 days, and members who miss three consecutive votes are removed. Details: statutes."
+rationale = "An elected body gives contributors a say once there is an organization to run."
+verification = "Review checklist"
+check = "Review"
+trigger = "organization"
+who = "you"
+moments = ["contributors"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-24"
+level = "MAY"
+statement = "Project funds may buy devices that contributors need for Tier 1 and screen-reader testing (A11Y-05, PLAT-01), under a published policy."
+rationale = "Testing on real devices is what accessibility and platform rules depend on."
+verification = "Review checklist: policy published"
+check = "Review"
+trigger = "funds"
+who = "you"
+moments = ["money"]
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-25"
+level = "SHOULD"
+statement = "The organization doesn't ship model-generated functional media, such as UI icons or placeholder images. Any that ships is revised by a human, disclosed per file in REUSE metadata and license-checked."
+rationale = "Functional media expresses less, but its training data raises the same consent and license questions."
+verification = "Review checklist: provenance, disclosure and license check per file"
+check = "Review"
+trigger = "always"
+who = "ai"
+added = "0.1.0"
+status = "active"
+
+[[rule]]
+id = "GOV-26"
+level = "MUST"
+statement = "Procedural media, generated by a reviewable algorithm whose parameters are in the repository, is not model-generated media, whoever wrote the code. Its code is reviewed like any other (GOV-02, GOV-17), and its output is checked not to reproduce another work. Coordinates or samples a model writes directly, such as SVG path data, count as model-generated media."
+rationale = "An algorithm a reviewer can read is code, not a model's imitation of someone else's art."
+verification = "Review checklist: generator in the repository; output provenance check"
+check = "Review"
+trigger = "always"
+who = "ai"
+added = "0.1.0"
+status = "active"
