@@ -93,6 +93,8 @@ No release has happened yet; these rules apply from the first one (`conventions/
 - **A crates.io publish** then waits in a protected environment for your approval of the release summary, and publishes through trusted publishing (REL-17). That approval is your only step.
 - **Apps** release when an intent asks for one, through the normal gate. They aren't gated, except that AI-drafted user documentation waits for your revision (GOV-14).
 
+The threats this workflow defends against, and what it leaves to you, are in [threat-model.md](threat-model.md).
+
 ## Human-only steps
 
 Some steps only a human can take. The digest lists them, and each one blocks nothing unless its rule says so (glossary).
@@ -105,7 +107,7 @@ Some steps only a human can take. The digest lists them, and each one blocks not
 - Write anything that speaks for you or the project, such as replies and announcements (GOV-14).
 - Contribute to other projects yourself (GOV-04, ARCH-05).
 - Make the art and media; agents never write under `media/` (GOV-22).
-- Set up the forge once: the agent's GitHub App, the Claude federation rule for CI, the ruleset (`conventions/forge/ruleset-default-branch.json`), the labels (`conventions/forge/labels.toml`), the merge settings (squash only, auto-merge, delete branches on merge) and three repository variables: `ANTHROPIC_FEDERATION_RULE_ID`, `ANTHROPIC_ORGANIZATION_ID` and `REVIEW_ALLOWED_BOTS` (the agent App's bot login). Until they're set, every AI review fails closed. Under DR-0008, before the first agent session works in the repository:
+- Set up the forge once: the agent's GitHub App (`conventions/forge/agent-app-manifest.json`, with the read access DR-0009 allows), the Claude federation rule for CI, the rulesets (`conventions/forge/ruleset-default-branch.json` and `ruleset-tags.json`), the labels (`conventions/forge/labels.toml`), the merge settings (squash only, auto-merge, delete branches on merge) and four repository variables: `ANTHROPIC_FEDERATION_RULE_ID`, `ANTHROPIC_ORGANIZATION_ID`, `ANTHROPIC_SERVICE_ACCOUNT_ID` and `REVIEW_ALLOWED_BOTS` (the agent App's bot login). Until they're set, every AI review fails closed. Under DR-0008, before the first agent session works in the repository:
   - run agent sessions as a separate OS user or in a container, whose only forge credential is a short-lived installation token of the App, minted outside it; your forge login, your browser and the App's private key stay out of its reach, and you approve from the forge's website or mobile app (row 1);
   - give the App the contents and pull requests permissions, and issues if a rule needs them, but never `workflows`, `actions`, `checks`, `statuses` or `administration`; you push workflow changes yourself (row 2);
   - keep the ruleset's "Require approval of the most recent push" off, as the JSON sets it, so that you can approve a workflow change you pushed. The gate's head-commit check and the dismissal of stale approvals cover the same risk (row 3).
@@ -125,9 +127,9 @@ In an incident, stop automatic merges first, then the agents, then revoke and ro
    gh api -X PUT repos/Kreqo/kreqo/actions/permissions -F enabled=false
    ```
 
-2. **Stop the agents.** End every Claude Code session. Suspend the agent's GitHub App (organization Settings, GitHub Apps, Configure, Suspend), which stops it from pushing, opening pull requests or commenting. Disable the CI federation rule in the Claude Console, so no CI agent can authenticate.
+2. **Stop the agents.** End every Claude Code session, and stop minting the App's token (`systemctl --user stop kreqo-app-token.timer`). Suspend the agent's GitHub App (organization Settings, GitHub Apps, Configure, Suspend), which stops it from pushing, opening pull requests or commenting. Archive the CI federation rule in the Claude Console, so no CI agent can authenticate; an archived rule can't be restored.
 3. **Revoke and rotate** what may have leaked, such as the App's private key, and handle affected releases as SEC-15 says.
-4. **Resume** once the cause is fixed, in reverse order: the federation rule, the App, Actions, then auto-merge. Run the Daily workflow by hand, because its secret scan was off.
+4. **Resume** once the cause is fixed, in reverse order: a new federation rule, whose ID replaces the `ANTHROPIC_FEDERATION_RULE_ID` variable, then the App and its token timer, Actions, then auto-merge. Run the Daily workflow by hand, because its secret scan was off.
 
 ## Working in the repository
 

@@ -21,9 +21,11 @@
 # permission (DR-0008 row 2).
 #
 # Repository variables, set once at setup (human-only):
-# - ANTHROPIC_FEDERATION_RULE_ID and ANTHROPIC_ORGANIZATION_ID: the Claude
-#   workload identity federation rule that the AI review logs in with.
-#   They're identifiers, not secrets: this workflow holds no secret (CI-09).
+# - ANTHROPIC_FEDERATION_RULE_ID, ANTHROPIC_ORGANIZATION_ID and
+#   ANTHROPIC_SERVICE_ACCOUNT_ID: the Claude workload identity federation
+#   rule that the AI review logs in with, and the service account it acts
+#   as. They're identifiers, not secrets: this workflow holds no secret
+#   (CI-09).
 # - REVIEW_ALLOWED_BOTS: the bot accounts whose pull requests get the AI
 #   review, comma-separated: the agent's GitHub App, and the dependency bot
 #   once there is one. Any other bot's pull request fails the review.
@@ -279,6 +281,7 @@ jobs:
           github_token: ${{ github.token }}
           anthropic_federation_rule_id: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
           anthropic_organization_id: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          anthropic_service_account_id: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
           allowed_bots: ${{ vars.REVIEW_ALLOWED_BOTS }}
           classify_inline_comments: "false" # It posts nothing.
           prompt: |

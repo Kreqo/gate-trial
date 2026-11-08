@@ -1,0 +1,17 @@
+{
+  "name": "kreqo-agent",
+  "url": "https://github.com/Kreqo/kreqo",
+  "description": "Kreqo's agent identity. The founder's local agent sessions push branches and open pull requests through it (DR-0007, DR-0008).",
+  "public": false,
+  "redirect_url": "https://github.com/Kreqo/kreqo",
+  "default_permissions": {
+    "actions": "read",
+    "checks": "read",
+    "contents": "write",
+    "metadata": "read",
+    "pull_requests": "write"
+  },
+  "default_events": [],
+  "request_oauth_on_install": false,
+  "setup_on_update": false
+}

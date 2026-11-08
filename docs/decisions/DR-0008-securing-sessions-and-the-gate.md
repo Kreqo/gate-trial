@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # DR-0008: Agent sessions can't reach the founder's forge credentials
 
-Status: accepted   Date: 2026-11-08   Scope: org
+Status: accepted; row 2 superseded by DR-0009   Date: 2026-11-08   Scope: org
 
 ## What you are approving
 
