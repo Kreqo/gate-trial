@@ -352,6 +352,9 @@ fn collect_attributes(stream: TokenStream, top_level: bool, found: &mut Vec<Attr
                             line: hash.span().start().line,
                             tokens: group.stream(),
                         });
+                        // An attribute's own arguments can hold attributes,
+                        // such as an item passed to an attribute macro.
+                        collect_attributes(group.stream(), false, found);
                         index = after + 1;
                     }
                     _ => index += 1,
@@ -519,10 +522,65 @@ fn i() {}
         Ok(())
     }
 
+    /// Only `#` or `#!` before brackets starts an attribute. A slice's or a
+    /// macro's brackets don't, and neither does `#` before anything else, as
+    /// in `quote!`, whose repetitions are still read for attributes.
+    #[test]
+    fn reads_only_a_hash_before_brackets_as_an_attribute() -> Result<()> {
+        let text = r##"const LEVELS: &[&str] = &["allow", "warn"];
+fn f() -> Vec<u8> {
+    vec![1, 2]
+}
+fn g() -> TokenStream {
+    quote! {
+        #(
+            #[allow(dead_code)]
+            fn #names() {}
+        )*
+    }
+}
+"##;
+        let stream = TokenStream::from_str(text).map_err(|error| anyhow::anyhow!("{error}"))?;
+        let lines: Vec<usize> = attributes(stream)
+            .iter()
+            .map(|attribute| attribute.line)
+            .collect();
+        assert_eq!(lines, [8]);
+        Ok(())
+    }
+
+    #[test]
+    fn finds_allow_attributes_inside_another_attribute() -> Result<()> {
+        // An item passed to an attribute macro keeps its attributes, and
+        // each one is read once.
+        let text = "#[my_macro(#[allow(dead_code)] struct S;)]\nfn f() {}\n#[outer(\n    #[allow(unused)]\n    #[expect(dead_code, reason = \"r\")]\n    fn g() {}\n)]\nfn h() {}\n";
+        assert_eq!(lines_using(text, "allow")?, [1, 4]);
+        Ok(())
+    }
+
     #[test]
     fn finds_allow_attributes_given_to_doctests() -> Result<()> {
         let text = "#![doc(test(no_crate_inject, attr(deny(warnings), allow(unused))))]\n#![doc(html_root_url = \"https://example.org\")]\n#![doc(test(attr(cfg_attr(unix, allow(dead_code)))))]\n";
         assert_eq!(lines_using(text, "allow")?, [1, 3]);
+        Ok(())
+    }
+
+    /// `doc(…)` gives doctests attributes only through `test(attr(…))`; its
+    /// other arguments, such as `cfg(…)`, apply none.
+    #[test]
+    fn applies_only_doc_test_attr_to_doctests() -> Result<()> {
+        let applied_names = |text: &str| -> Result<Vec<String>> {
+            let stream = TokenStream::from_str(text).map_err(|error| anyhow::anyhow!("{error}"))?;
+            Ok(applied(&stream).into_iter().map(|(name, _)| name).collect())
+        };
+        assert_eq!(
+            applied_names("doc(cfg(all(unix, not(windows))))")?,
+            Vec::<String>::new()
+        );
+        assert_eq!(
+            applied_names("doc(test(no_crate_inject, attr(deny(warnings))))")?,
+            ["deny"]
+        );
         Ok(())
     }
 
@@ -736,6 +794,15 @@ mod m {
             assert_eq!(record_number(&arguments(&text)?), None, "{reason}");
         }
         assert_eq!(record_number(&arguments("unsafe_code")?), None);
+        // Only the `reason` names a record. rustc refuses any other key, but
+        // not inside a `cfg_attr` whose condition doesn't hold, which this
+        // check reads all the same.
+        assert_eq!(
+            record_number(&arguments(
+                r#"unsafe_code, note = "DR-0007", reason = "faster""#
+            )?),
+            None
+        );
         Ok(())
     }
 
@@ -753,6 +820,47 @@ mod m {
         assert!(!record_exists(scratch.path(), "0004"));
         assert!(!record_exists(scratch.path(), "0005"));
         assert!(!record_exists(scratch.path(), "0006"));
+        Ok(())
+    }
+
+    /// The check reads every Rust file that git would track, takes the
+    /// denied lints from the root Cargo.toml, and knows a crate root by any
+    /// path to it.
+    #[test]
+    fn checks_the_files_git_would_track() -> Result<()> {
+        let scratch = Scratch::new()?;
+        let root = scratch.path();
+        fs::create_dir_all(root.join("src"))?;
+        fs::create_dir_all(root.join("docs").join("decisions"))?;
+        fs::write(
+            root.join("Cargo.toml"),
+            "[workspace.lints.rust]\nunsafe_code = \"deny\"\n",
+        )?;
+        fs::write(
+            root.join("docs").join("decisions").join("DR-0001-ffi.md"),
+            "",
+        )?;
+        let expect_unsafe = "#![expect(unsafe_code, reason = \"DR-0001\")]\n";
+        fs::write(
+            root.join("src").join("lib.rs"),
+            format!("{expect_unsafe}mod other;\n"),
+        )?;
+        fs::write(
+            root.join("src").join("other.rs"),
+            format!(
+                "{expect_unsafe}#[allow(dead_code)]\nfn f() {{}}\n#[warn(unsafe_code)]\nfn g() {{}}\n"
+            ),
+        )?;
+        git::init(root)?;
+        let crate_roots = BTreeSet::from([root.join("src").join("..").join("src").join("lib.rs")]);
+        assert_eq!(
+            check(root, &crate_roots)?,
+            [
+                "src/other.rs:1: `expect(unsafe_code)` belongs only in a crate root's `#![expect(unsafe_code, reason = \"DR-NNNN\")]` (SEC-01)",
+                "src/other.rs:2: an `allow` attribute; suppress with `#[expect(lint, reason = \"…\")]` (QA-01)",
+                "src/other.rs:4: `warn(unsafe_code)` lowers a lint that the workspace table denies (QA-01)",
+            ]
+        );
         Ok(())
     }
 }

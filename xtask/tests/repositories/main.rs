@@ -9,7 +9,11 @@
 
 #[cfg(unix)]
 mod git_version;
+mod hook_files;
 mod hooks;
+mod messages;
+mod online_audits;
 mod secrets;
 mod support;
+mod tools;
 mod workflows;

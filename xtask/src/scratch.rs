@@ -54,3 +54,20 @@ impl Drop for Scratch {
         let _ = fs::remove_dir_all(&self.path);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A scratch folder is removed, with what it holds, when it's dropped.
+    #[test]
+    fn removes_the_folder_when_dropped() -> Result<()> {
+        let scratch = Scratch::new()?;
+        let path = scratch.path().to_path_buf();
+        fs::create_dir(path.join("nested"))?;
+        fs::write(path.join("nested").join("file"), "x")?;
+        drop(scratch);
+        assert!(!path.exists(), "{} is left behind", path.display());
+        Ok(())
+    }
+}

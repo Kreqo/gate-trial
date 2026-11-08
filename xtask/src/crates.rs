@@ -268,6 +268,118 @@ mod tests {
         Ok(())
     }
 
+    /// A workspace root's Cargo.toml, with the lint table its crates inherit.
+    const WORKSPACE: &str = "[workspace]\nresolver = \"3\"\nmembers = [\"tools/a\"]\n\n[workspace.lints.rust]\nunsafe_code = \"deny\"\n";
+
+    /// The manifest of the crate `tools/a`, in a tool's license group and
+    /// inheriting the workspace lints.
+    const MANIFEST: &str = "[package]\nname = \"a\"\nversion = \"0.0.0\"\nedition = \"2024\"\nlicense = \"MIT OR Apache-2.0\"\n\n[lints]\nworkspace = true\n";
+
+    /// A scratch folder whose `ws` folder is a git checkout of a workspace
+    /// with one crate, `tools/a`, in a project of its own; the scratch
+    /// folder itself stands above the workspace.
+    fn workspace() -> Result<Scratch> {
+        let scratch = Scratch::new()?;
+        let root = scratch.path().join("ws");
+        let folder = root.join("tools").join("a");
+        fs::create_dir_all(folder.join("src"))?;
+        fs::write(root.join("Cargo.toml"), WORKSPACE)?;
+        fs::write(folder.join("Cargo.toml"), MANIFEST)?;
+        fs::write(folder.join("project.toml"), VALID)?;
+        fs::write(folder.join("src").join("lib.rs"), "")?;
+        git::init(&root)?;
+        Ok(scratch)
+    }
+
+    /// What `check_package` finds wrong with each crate of the workspace.
+    fn package_problems(root: &Path) -> Result<Vec<String>> {
+        let metadata = MetadataCommand::new().current_dir(root).no_deps().exec()?;
+        let mut problems = Vec::new();
+        for package in metadata.workspace_packages() {
+            problems.extend(check_package(
+                metadata.workspace_root.as_std_path(),
+                package,
+            )?);
+        }
+        Ok(problems)
+    }
+
+    /// A crate carries its project's license (LEGAL-01) and inherits the
+    /// workspace lints (QA-01).
+    #[test]
+    fn finds_a_crates_license_and_lints_problems() -> Result<()> {
+        let scratch = workspace()?;
+        let root = scratch.path().join("ws");
+        let manifest = root.join("tools").join("a").join("Cargo.toml");
+        assert_eq!(package_problems(&root)?, Vec::<String>::new());
+        for (changed, problem) in [
+            (
+                MANIFEST.replace("MIT OR Apache-2.0", "MIT"),
+                "a: its license is `MIT`, but its project's group is `MIT OR Apache-2.0` (LEGAL-01)",
+            ),
+            (
+                MANIFEST.replace("license = \"MIT OR Apache-2.0\"\n", ""),
+                "a: no `license` field; its project's group is `MIT OR Apache-2.0` (LEGAL-01)",
+            ),
+            (
+                MANIFEST.replace("\n[lints]\nworkspace = true\n", ""),
+                "a: its Cargo.toml lacks `[lints] workspace = true` (QA-01)",
+            ),
+        ] {
+            fs::write(&manifest, changed)?;
+            assert_eq!(package_problems(&root)?, [problem]);
+        }
+        Ok(())
+    }
+
+    /// A crate belongs to the nearest project.toml above it, short of the
+    /// workspace root: one at the root, or above it, claims no crate
+    /// (DR-0003).
+    #[test]
+    fn finds_the_nearest_project_below_the_root() -> Result<()> {
+        let scratch = workspace()?;
+        let root = scratch.path().join("ws");
+        let gpl = VALID.replace("MIT OR Apache-2.0", "GPL-3.0-or-later");
+        fs::write(root.join("tools").join("project.toml"), &gpl)?;
+        assert_eq!(package_problems(&root)?, Vec::<String>::new());
+        fs::remove_file(root.join("tools").join("a").join("project.toml"))?;
+        assert_eq!(
+            package_problems(&root)?,
+            [
+                "a: its license is `MIT OR Apache-2.0`, but its project's group is `GPL-3.0-or-later` (LEGAL-01)"
+            ]
+        );
+        fs::remove_file(root.join("tools").join("project.toml"))?;
+        let unclaimed = ["a: no project.toml in its folder or above it (DR-0003)"];
+        for outside in [root.clone(), scratch.path().to_path_buf()] {
+            let project = outside.join("project.toml");
+            fs::write(&project, VALID)?;
+            assert_eq!(package_problems(&root)?, unclaimed, "{}", project.display());
+            fs::remove_file(&project)?;
+        }
+        Ok(())
+    }
+
+    /// The step fails when a crate has a problem, and passes otherwise.
+    #[test]
+    fn checks_every_crate_in_the_workspace() -> Result<()> {
+        let scratch = workspace()?;
+        let root = scratch.path().join("ws");
+        check(&root)?;
+        fs::write(
+            root.join("tools").join("a").join("Cargo.toml"),
+            MANIFEST.replace("MIT OR Apache-2.0", "MIT"),
+        )?;
+        let Err(error) = check(&root) else {
+            bail!("a crate outside its project's license group passed");
+        };
+        assert_eq!(
+            format!("{error:#}"),
+            "1 problem(s) with the workspace's crates"
+        );
+        Ok(())
+    }
+
     #[test]
     fn detects_inherited_lints() -> Result<()> {
         assert!(inherits_workspace_lints(

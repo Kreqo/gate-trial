@@ -937,6 +937,38 @@ mod tests {
         check(root)
     }
 
+    /// `cargo xtask rules generate` writes the views that the check
+    /// compares.
+    #[test]
+    fn the_generate_command_writes_the_views() -> Result<()> {
+        let scratch = checkout(&data())?;
+        let root = scratch.path();
+        assert!(check(root).is_err());
+        run(root, Command::Generate)?;
+        check(root)
+    }
+
+    /// A view that's there but can't be read fails the check with the
+    /// reason, rather than being reported missing.
+    #[test]
+    fn fails_on_a_view_it_cant_read() -> Result<()> {
+        let scratch = checkout(&data())?;
+        let root = scratch.path();
+        generate(root)?;
+        let now = root.join(VIEWS).join("NOW.md");
+        fs::remove_file(&now)?;
+        fs::create_dir(&now)?;
+        let Err(error) = stale(root, &views::render(&Rules::load(root)?)) else {
+            bail!("a view that can't be read passed");
+        };
+        let error = format!("{error:#}");
+        assert!(
+            error.contains(&format!("couldn't read {}", now.display())),
+            "{error}"
+        );
+        Ok(())
+    }
+
     #[test]
     fn finds_the_first_line_that_differs() {
         assert_eq!(first_difference(b"a\nb\n", b"a\nb\n"), None);

@@ -388,6 +388,7 @@ fn civil_from_days(days: u64) -> (u64, u64, u64) {
 mod tests {
     use super::*;
     use crate::scratch::Scratch;
+    use std::time::Duration;
 
     /// 2026-10-24, a fixed day for the tests that judge dates.
     const TODAY: u64 = 20_750;
@@ -471,6 +472,82 @@ mod tests {
         Ok(())
     }
 
+    /// The lists of suppressions and exceptions may be left out, since
+    /// cargo-deny's default for each is an empty list.
+    #[test]
+    fn accepts_leaving_out_the_lists_that_may_be_empty() -> Result<()> {
+        let text = committed_with(&[
+            ("ignore = []\n", ""),
+            ("skip = []\n", ""),
+            ("skip-tree = []\n", ""),
+            ("exceptions = []\n", ""),
+        ]);
+        assert_eq!(policy_problems(&text, TODAY)?, Vec::<String>::new());
+        Ok(())
+    }
+
+    /// A setting the policy names must still hold the value, or the kind of
+    /// value, it names.
+    #[test]
+    fn rejects_values_of_the_wrong_kind() -> Result<()> {
+        let text = committed_with(&[
+            ("all-features = true", "all-features = false"),
+            (
+                "\"Unicode-DFS-2016\",",
+                "\"Unicode-DFS-2016\",\n  { license = \"MPL-2.0\" },",
+            ),
+            // An exception names its crate with `crate`, and nothing else.
+            (
+                "exceptions = []",
+                r#"exceptions = [
+  { allow = ["MPL-2.0"], crate = "webpki-roots" },
+  { allow = ["MPL-2.0"], name = "option-ext" },
+]"#,
+            ),
+        ]);
+        assert_eq!(
+            policy_problems(&text, TODAY)?,
+            [
+                "`graph.all-features` must be true",
+                "`licenses.allow` must be a list of strings",
+                "licenses.exceptions[1] sets `name`, which the policy doesn't allow",
+            ]
+        );
+        Ok(())
+    }
+
+    /// The check reads the checkout's deny.toml, and fails on a problem in
+    /// it or on an exceptions file beside it.
+    #[test]
+    fn checks_the_policy_of_a_checkout() -> Result<()> {
+        let scratch = Scratch::new()?;
+        let root = scratch.path();
+        let error = check_policy(root).expect_err("a checkout without deny.toml passed");
+        assert!(error.to_string().starts_with("couldn't read "), "{error:#}");
+        fs::write(root.join("deny.toml"), committed_with(&[]))?;
+        check_policy(root)?;
+        fs::write(root.join("deny.exceptions.toml"), "")?;
+        let error = check_policy(root).expect_err("an exceptions file passed");
+        assert_eq!(
+            error.to_string(),
+            "1 problem(s) with SEC-02's written policy"
+        );
+        fs::remove_file(root.join("deny.exceptions.toml"))?;
+        fs::write(
+            root.join("deny.toml"),
+            committed_with(&[
+                ("yanked = \"deny\"\n", ""),
+                ("unknown-git = \"deny\"", "unknown-git = \"warn\""),
+            ]),
+        )?;
+        let error = check_policy(root).expect_err("a deny.toml with two problems passed");
+        assert_eq!(
+            error.to_string(),
+            "2 problem(s) with SEC-02's written policy"
+        );
+        Ok(())
+    }
+
     #[test]
     fn checks_reasons_and_expiry_dates() -> Result<()> {
         let text = committed_with(&[
@@ -514,6 +591,29 @@ mod tests {
         Ok(())
     }
 
+    /// A suppression holds through its expiry date, which may be 90 days
+    /// ahead at most: from TODAY, 2027-01-22.
+    #[test]
+    fn accepts_expiry_dates_from_today_to_90_days_ahead() -> Result<()> {
+        let text = committed_with(&[(
+            "skip = []",
+            r#"skip = [
+  { crate = "windows-sys@0.52.0", reason = "two versions upstream; until 2026-10-23" },
+  { crate = "windows-sys@0.59.0", reason = "two versions upstream; until 2026-10-24" },
+  { crate = "windows-sys@0.60.0", reason = "two versions upstream; until 2027-01-22" },
+  { crate = "windows-sys@0.61.0", reason = "two versions upstream; until 2027-01-23" },
+]"#,
+        )]);
+        assert_eq!(
+            policy_problems(&text, TODAY)?,
+            [
+                "bans.skip[0] expired after 2026-10-23",
+                "bans.skip[3] runs past 90 days from today; give a nearer date",
+            ]
+        );
+        Ok(())
+    }
+
     #[test]
     fn reads_expiry_dates() {
         assert_eq!(
@@ -527,6 +627,59 @@ mod tests {
         assert_eq!(day_of("2028-02-29"), Some(TODAY + 493));
         assert_eq!(day_of("2027-02-29"), None);
         assert_eq!(day_of("1969-12-31"), None);
+    }
+
+    /// Only a whole `YYYY-MM-DD` date is an expiry date.
+    #[test]
+    fn reads_only_whole_dates_as_expiry_dates() {
+        assert_eq!(expiry("until 2027/01/31"), None);
+        assert_eq!(expiry("until 2027-01-3"), None);
+        assert_eq!(expiry("until 2027-01-311"), None);
+    }
+
+    #[test]
+    fn refuses_days_and_months_that_dont_exist() {
+        // Day 0 of March would underflow the day count.
+        assert_eq!(day_of("2027-03-00"), None);
+        assert_eq!(day_of("2027-01-32"), None);
+        assert_eq!(day_of("2027-00-10"), None);
+        assert_eq!(day_of("2027-13-01"), None);
+    }
+
+    #[test]
+    fn counts_days_from_1970_01_01() {
+        assert_eq!(day_of("1970-01-01"), Some(0));
+        assert_eq!(day_of("1970-03-01"), Some(59));
+        assert_eq!(day_of("1970-02-29"), None);
+    }
+
+    /// Every fourth year is a leap year, but a century only when it's a
+    /// multiple of 400.
+    #[test]
+    fn follows_the_gregorian_leap_years() {
+        assert_eq!(day_of("2000-02-29"), Some(11_016));
+        assert_eq!(day_of("2024-02-29"), Some(19_782));
+        assert_eq!(day_of("2027-02-29"), None);
+        assert_eq!(day_of("2100-02-29"), None);
+    }
+
+    /// Today is the day whose 86,400 seconds hold the moment the clock
+    /// reads.
+    #[test]
+    fn counts_today_in_days_from_1970_01_01() -> Result<()> {
+        let start_of = |day: u64| UNIX_EPOCH.checked_add(Duration::from_secs(day * 86_400));
+        let before = SystemTime::now();
+        let day = today()?;
+        let after = SystemTime::now();
+        assert!(
+            start_of(day).is_some_and(|start| start <= after),
+            "day {day} starts after the clock's reading"
+        );
+        assert!(
+            start_of(day + 1).is_some_and(|end| before < end),
+            "day {day} ends before the clock's reading"
+        );
+        Ok(())
     }
 
     #[test]

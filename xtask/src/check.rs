@@ -706,6 +706,100 @@ PATH = "stubs"
         Ok(())
     }
 
+    /// The repository's config is read once, in full, even through a link;
+    /// the reading of the configs above it for aliases leaves it out, so
+    /// each problem it holds is reported once.
+    #[cfg(unix)]
+    #[test]
+    fn reports_the_repositorys_own_config_once() -> Result<()> {
+        let scratch = Scratch::new()?;
+        let root = scratch.path().join("repo");
+        fs::create_dir_all(root.join(".cargo"))?;
+        fs::write(
+            root.join(".cargo").join("config.toml"),
+            "[alias]\nfmt = \"clippy --version\"\n",
+        )?;
+        let link = scratch.path().join("link");
+        std::os::unix::fs::symlink(&root, &link)?;
+        for checkout in [&root, &link] {
+            let Err(error) = check_cargo_config(checkout) else {
+                anyhow::bail!("an alias for fmt passed");
+            };
+            let error = format!("{error:#}");
+            let problem = format!(
+                "{} defines the cargo alias `fmt`",
+                checkout.join(".cargo").join("config.toml").display()
+            );
+            assert_eq!(error.matches(&problem).count(), 1, "{error}");
+        }
+        Ok(())
+    }
+
+    /// A config that can't be read fails the check, rather than passing
+    /// as if it were absent.
+    #[test]
+    fn fails_on_a_cargo_config_it_cant_read() -> Result<()> {
+        let scratch = Scratch::new()?;
+        let path = scratch.path().join(".cargo").join("config.toml");
+        fs::create_dir_all(&path)?;
+        let Err(error) = check_cargo_config(scratch.path()) else {
+            anyhow::bail!("an unreadable .cargo/config.toml passed");
+        };
+        let error = format!("{error:#}");
+        assert!(
+            error.contains(&format!("couldn't read {}", path.display())),
+            "{error}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn fails_when_either_part_fails() {
+        let failure = |text: &str| -> Result<()> { Err(anyhow::anyhow!("{text}")) };
+        assert!(both(Ok(()), Ok(())).is_ok());
+        for (first, second, expected) in [
+            (failure("policy"), Ok(()), "policy"),
+            (Ok(()), failure("scan"), "scan"),
+            (failure("policy"), failure("scan"), "policy; scan"),
+        ] {
+            let error = both(first, second).err().map(|error| format!("{error:#}"));
+            assert_eq!(error.as_deref(), Some(expected));
+        }
+    }
+
+    /// The log and the errors name a command by its program's file name,
+    /// followed by its arguments.
+    #[test]
+    fn shows_a_command_with_its_programs_file_name() {
+        let mut command = Command::new(Path::new("tools").join("bin").join("betterleaks"));
+        command.args(["git", ".", "--log-opts=--text HEAD"]);
+        assert_eq!(show(&command), "betterleaks git . --log-opts=--text HEAD");
+        assert_eq!(show(&Command::new("cargo")), "cargo");
+    }
+
+    /// The fmt step runs rustfmt through cargo, and fails on code that
+    /// rustfmt would change (QA-01).
+    #[test]
+    fn the_fmt_step_fails_on_unformatted_code() -> Result<()> {
+        let scratch = Scratch::new()?;
+        let root = scratch.path();
+        fs::create_dir(root.join("src"))?;
+        fs::write(
+            root.join("Cargo.toml"),
+            "[package]\nname = \"a\"\nversion = \"0.0.0\"\nedition = \"2024\"\n",
+        )?;
+        let lib = root.join("src").join("lib.rs");
+        fs::write(&lib, "pub fn a() {}\n")?;
+        run_step(root, Step::Fmt)?;
+        fs::write(&lib, "pub fn a( ) { }\n")?;
+        let Err(error) = run_step(root, Step::Fmt) else {
+            anyhow::bail!("unformatted code passed the fmt step");
+        };
+        let error = format!("{error:#}");
+        assert!(error.contains("fmt --all --check exited"), "{error}");
+        Ok(())
+    }
+
     #[test]
     fn refuses_a_legacy_cargo_config() -> Result<()> {
         let scratch = Scratch::new()?;

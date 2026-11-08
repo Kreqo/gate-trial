@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: Kreqo contributors
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+# cargo-mutants, which tests xtask's tests (DR-0002, QA-08). The tests it
+# runs include the ones that need the pinned Betterleaks and zizmor, as CI's
+# tool-tests step does, and it copies `.git` so tests that read the
+# repository's own git settings pass. Run it inside a memory cap: one of
+# xtask's mutants makes a loop allocate without end.
+additional_cargo_test_args = ["--", "--include-ignored"]
+copy_vcs = true

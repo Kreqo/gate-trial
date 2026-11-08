@@ -160,4 +160,36 @@ mod tests {
             format!("pipx install reuse=={}", REUSE.version)
         );
     }
+
+    /// A tool pinned at 1.0.0, run as `program --version`.
+    fn pinned(program: &'static str) -> Tool {
+        Tool {
+            program,
+            version_args: &["--version"],
+            version: "1.0.0",
+            source: Source::Crates,
+        }
+    }
+
+    #[test]
+    fn hints_how_to_install_a_missing_tool() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let error =
+            require(root, &pinned("kreqo-xtask-missing-tool")).expect_err("a missing tool passed");
+        assert_eq!(
+            error.to_string(),
+            "kreqo-xtask-missing-tool isn't installed; install it with: cargo install --locked kreqo-xtask-missing-tool@1.0.0"
+        );
+    }
+
+    /// A program that is there but can't run, such as a file that isn't a
+    /// program, isn't reported as missing.
+    #[test]
+    fn reports_a_tool_that_cant_run() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let program = concat!(env!("CARGO_MANIFEST_DIR"), "/Cargo.toml");
+        let error =
+            require(root, &pinned(program)).expect_err("a file that isn't a program passed");
+        assert_eq!(error.to_string(), format!("couldn't run {program}"));
+    }
 }
