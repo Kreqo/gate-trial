@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
 # Gating trial T13: runs on another event, and from another workflow file,
-# try the AI review's login.
+# try the AI review's login. Version 2 calls the Claude Code CLI directly:
+# claude-code-action refuses push events and needs a checkout, while the CLI
+# makes the same token exchange the action does.
 name: Federation probe
 on:
   push:
@@ -12,15 +14,29 @@ permissions: {}
 jobs:
   probe:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
-      contents: read
       id-token: write
     steps:
-      - uses: anthropics/claude-code-action@61a9c274fa7110a66dfafc1bbbced03833eb25fe # v1.0.269
-        with:
-          github_token: ${{ github.token }}
-          anthropic_federation_rule_id: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
-          anthropic_organization_id: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
-          anthropic_service_account_id: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
-          prompt: Reply with the word OK.
-          claude_args: --model claude-opus-5-5 --max-turns 1 --tools Read
+      - name: Install Claude Code 2.1.319, as the action does
+        run: |
+          set -o pipefail
+          curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.319
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Fetch an OIDC token for the Claude API, and show its claims
+        run: |
+          set -o pipefail
+          token=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" | jq -r .value)
+          echo "::add-mask::$token"
+          umask 077
+          printf '%s' "$token" > "$RUNNER_TEMP/identity-token"
+          # The claims only, never the token: its middle part, decoded.
+          printf '%s' "$token" | python3 -I -c 'import sys, json, base64; p = sys.stdin.read().split(".")[1]; c = json.loads(base64.urlsafe_b64decode(p + "=" * (-len(p) % 4))); [print(f"{k}: {c.get(k)}") for k in ("sub", "aud", "repository", "repository_id", "event_name", "ref", "workflow_ref", "runner_environment")]'
+      - name: Try the login
+        env:
+          ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          ANTHROPIC_IDENTITY_TOKEN_FILE: ${{ runner.temp }}/identity-token
+        run: claude -p 'Reply with the word OK.' --model claude-opus-5-5 --max-turns 1 --tools Read
