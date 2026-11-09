@@ -71,3 +71,4 @@ jobs:
           PULL_REQUEST_TITLE: ${{ github.event.pull_request.title }}
           PULL_REQUEST_BODY: ${{ github.event.pull_request.body }}
         run: cargo xtask scan-pull-request
+# Gating trial T8: pushed by the owner.
