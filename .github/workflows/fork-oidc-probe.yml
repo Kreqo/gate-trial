@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: Kreqo contributors
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+# Gating trial T18: can a fork's pull_request run get a GitHub OIDC token?
+# It only asks GitHub for one; it never tries to log in to Claude. If it
+# gets one, it prints the token's claims, never the token, and fails.
+name: Fork OIDC probe
+on:
+  pull_request:
+permissions: {}
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      id-token: write
+    steps:
+      - name: Ask GitHub for an OIDC token for the Claude API
+        run: |
+          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] || [ -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]; then
+            echo "No OIDC request variables: this run can't get a token."
+            exit 0
+          fi
+          response=$(curl -sS -w '\n%{http_code}' -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com")
+          status=$(printf '%s\n' "$response" | tail -n 1)
+          token=$(printf '%s\n' "$response" | sed '$d' | jq -r '.value // empty' 2> /dev/null || true)
+          if [ -z "$token" ]; then
+            echo "GitHub refused the token request: HTTP $status."
+            exit 0
+          fi
+          echo "::add-mask::$token"
+          echo "This run GOT an OIDC token. Its claims:"
+          printf '%s' "$token" | python3 -I -c 'import sys, json, base64; p = sys.stdin.read().split(".")[1]; c = json.loads(base64.urlsafe_b64decode(p + "=" * (-len(p) % 4))); [print(f"{k}: {c.get(k)}") for k in ("sub", "aud", "repository", "repository_id", "event_name", "workflow_ref", "head_ref", "base_ref")]'
+          exit 1
