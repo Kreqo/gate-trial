@@ -72,3 +72,4 @@ exceptions = []
 unknown-registry = "deny"
 unknown-git = "deny"
 # Gating trial T1: an owned path.
+# Gating trial T10.
