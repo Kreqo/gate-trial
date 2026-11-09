@@ -71,3 +71,4 @@ exceptions = []
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+# Gating trial T3.
