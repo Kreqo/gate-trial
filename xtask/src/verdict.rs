@@ -241,7 +241,7 @@ fn blocking(review: &Review) -> impl Iterator<Item = &Finding> {
     review
         .findings
         .iter()
-        .filter(|finding| finding.severity == Severity::Blocking)
+        .filter(|finding| matches!(finding.severity, Severity::Blocking))
 }
 
 /// A short summary of the verdict, line by line. Each line starts with a
